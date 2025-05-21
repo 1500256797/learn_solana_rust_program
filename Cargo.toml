@@ -7,11 +7,15 @@ edition = "2024"
 [lib]
 crate-type = ["cdylib", "lib"]
 
+[[bin]]
+name = "client"
+path = "src/client_test.rs"
 
 [dependencies]
 solana-program = "2.2.1"
 
 [dev-dependencies]
+solana-client = "2.2.7"
 solana-program-test = "2.2.7"
 solana-sdk = "2.2.2"
 tokio = "1.45.0"
