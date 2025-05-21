@@ -13,7 +13,20 @@ use solana_program::{
     system_instruction,
     sysvar::Sysvar,
 };
-
+/// Total extra compute units used per compute_fn! call 409 CU
+/// https://github.com/anza-xyz/agave/blob/d88050cda335f87e872eddbdf8506bc063f039d3/programs/bpf_loader/src/syscalls/logging.rs#L70
+/// https://github.com/anza-xyz/agave/blob/d88050cda335f87e872eddbdf8506bc063f039d3/program-runtime/src/compute_budget.rs#L150
+#[macro_export]
+macro_rules! compute_fn {
+    ($msg:expr=> $($tt:tt)*) => {
+        ::solana_program::msg!(concat!($msg, " {"));
+        ::solana_program::log::sol_log_compute_units();
+        let res = { $($tt)* };
+        ::solana_program::log::sol_log_compute_units();
+        ::solana_program::msg!(concat!(" } // ", $msg));
+        res
+    };
+}
 entrypoint!(process_instruction);
 
 pub fn process_instruction(
@@ -21,9 +34,15 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("Hello, world!");
+    // 105 cu
+    compute_fn! { "calculate unpack cu " =>
+        let instruction = CounterInstruction::unpack(instruction_data)
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+    }
+
     let instruction = CounterInstruction::unpack(instruction_data)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
+
     match instruction {
         CounterInstruction::InitializeCounter { init_value } => {
             process_initialize_counter(program_id, accounts, init_value)?
